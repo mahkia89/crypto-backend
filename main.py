@@ -20,6 +20,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+async def root():
+    return {"message": "API is running!"}
+
+@app.get("/test")
+async def test():
+    return {"message": "Test endpoint working!"}
+
 def create_database():
     conn = sqlite3.connect("crypto_prices.db")
     cursor = conn.cursor()
