@@ -8,7 +8,7 @@ from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 import json
 
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/mahkia89/crypto-db/main/prices.json"
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/mahkia89/crypto-db/refs/heads/main/prices.json"
 
 app = FastAPI()
 
