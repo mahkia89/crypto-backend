@@ -46,10 +46,17 @@ def create_database():
 async def fetch_prices_from_github():
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.get(GITHUB_RAW_URL)
+        print("🔹 GitHub Fetch Status:", response.status_code)  # لاگ برای تست
+        print("🔹 Response:", response.text[:500])  # لاگ 500 کاراکتر اول
         if response.status_code == 200:
-            data = response.json()
-            return data
+            try:
+                data = response.json()
+                return data
+            except json.JSONDecodeError:
+                print("❌ JSON Decode Error!")
+                return None
         return None
+
 
 async def update_prices():
     data = await fetch_prices_from_github()
@@ -57,11 +64,15 @@ async def update_prices():
         conn = sqlite3.connect("crypto_prices.db")
         cursor = conn.cursor()
 
+        from datetime import datetime
+
         for coin in data:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # تبدیل به string برای sqlite
             cursor.execute(
-                "INSERT INTO prices (symbol, price, source) VALUES (?, ?, ?)",
-                (coin["symbol"], coin["price"], "GitHub DB")
+                "INSERT INTO prices (symbol, price, source, timestamp) VALUES (?, ?, ?, ?)",
+                (coin["symbol"], coin["price"], "GitHub DB", timestamp)
             )
+
         conn.commit()
         conn.close()
         print("✅ Prices updated from GitHub database.")
@@ -72,6 +83,10 @@ async def update_prices():
 async def get_prices():
     await update_prices()
     return {"status": "success", "message": "Prices updated from GitHub and stored in database."}
+    
+@app.get("/stored-prices")
+async def stored_prices():
+    return await get_prices()
 
 async def periodic_price_fetch():
     while True:
@@ -95,6 +110,14 @@ async def get_price_chart(coin_symbol: str):
         return Response(content="No data available", media_type="text/plain", status_code=404)
 
     prices = [row[0] for row in data]
+    
+    timestamps = []
+    for row in data:
+        try:
+            timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
+        except ValueError:
+            print(f"❌ Error parsing timestamp: {row[1]}")
+
     timestamps = [datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S") for row in data]
     
     plt.figure(figsize=(10, 5))
@@ -116,4 +139,6 @@ from email_system.email_sender import generate_and_send_email
 
 @app.get("/send-email")
 async def send_price_chart_email():
-    return generate_and_send_email()
+    result = generate_and_send_email()
+    return {"status": "success", "message": result}
+
