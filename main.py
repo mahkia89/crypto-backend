@@ -1,17 +1,37 @@
 from fastapi import FastAPI, Response
 import httpx
 import asyncio
-import sqlite3
+import psycopg2
 import matplotlib.pyplot as plt
 import io
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 import json
+import os
 
-GITHUB_RAW_URL = "https://raw.githubusercontent.com/mahkia89/crypto-db/refs/heads/main/prices.json"
+# GitHub Data Source
+GITHUB_RAW_URL = "https://raw.githubusercontent.com/mahkia89/crypto-db/main/prices.json"
+
+# PostgreSQL Database Connection Details
+DB_HOST = "dpg-cvfqephopnds73bcc2a0-a"  # Render internal hostname
+DB_NAME = "crypto_db_b52e"  # Replace with your actual DB name
+DB_USER = "crypto_db_b52e_user"  # Replace with your actual username
+DB_PASSWORD = "mTcqgolkW8xSYVgngMhpp4eHKZeOJx8v"  # Replace with your actual password
+DB_PORT = "5432"  # Default PostgreSQL port
+
+# Function to get a database connection
+def get_db_connection():
+    return psycopg2.connect(
+        host=DB_HOST,
+        database=DB_NAME,
+        user=DB_USER,
+        password=DB_PASSWORD,
+        port=DB_PORT
+    )
 
 app = FastAPI()
 
+# CORS Middleware (Allows external frontend access)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,105 +40,83 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-async def root():
-    return {"message": "API is running!"}
-
-@app.get("/test")
-async def test():
-    return {"message": "Test endpoint working!"}
-
+# Create PostgreSQL Table
 def create_database():
-    conn = sqlite3.connect("crypto_prices.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS prices (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         symbol TEXT NOT NULL,
         price REAL NOT NULL,
         source TEXT NOT NULL,
-        timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+        timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
     conn.commit()
+    cursor.close()
     conn.close()
 
+# Fetch prices from GitHub
 async def fetch_prices_from_github():
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.get(GITHUB_RAW_URL)
-        print("🔹 GitHub Fetch Status:", response.status_code)  # لاگ برای تست
-        print("🔹 Response:", response.text[:500])  # لاگ 500 کاراکتر اول
         if response.status_code == 200:
-            try:
-                data = response.json()
-                return data
-            except json.JSONDecodeError:
-                print("❌ JSON Decode Error!")
-                return None
-        return None
+            return response.json()
+    return None
 
-
+# Update database with new prices
 async def update_prices():
     data = await fetch_prices_from_github()
     if data:
-        conn = sqlite3.connect("crypto_prices.db")
+        conn = get_db_connection()
         cursor = conn.cursor()
 
-        from datetime import datetime
-
         for coin in data:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # تبدیل به string برای sqlite
             cursor.execute(
-                "INSERT INTO prices (symbol, price, source, timestamp) VALUES (?, ?, ?, ?)",
-                (coin["symbol"], coin["price"], "GitHub DB", timestamp)
+                "INSERT INTO prices (symbol, price, source) VALUES (%s, %s, %s)",
+                (coin["symbol"], coin["price"], "GitHub DB")
             )
 
         conn.commit()
+        cursor.close()
         conn.close()
         print("✅ Prices updated from GitHub database.")
     else:
         print("❌ Failed to fetch prices from GitHub!")
 
+# API route to trigger price update
 @app.get("/prices")
 async def get_prices():
     await update_prices()
     return {"status": "success", "message": "Prices updated from GitHub and stored in database."}
-    
-@app.get("/stored-prices")
-async def stored_prices():
-    return await get_prices()
 
+# Background Task: Periodically update prices
 async def periodic_price_fetch():
     while True:
         await update_prices()
-        await asyncio.sleep(300)
+        await asyncio.sleep(300)  # Update every 5 minutes
 
 @app.on_event("startup")
 async def startup_event():
     create_database()
     asyncio.create_task(periodic_price_fetch())
 
+# Generate Price Chart for a Specific Coin
 @app.get("/chart-image/{coin_symbol}")
 async def get_price_chart(coin_symbol: str):
-    conn = sqlite3.connect("crypto_prices.db")
+    conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT price, timestamp FROM prices WHERE symbol = ? ORDER BY timestamp DESC", (coin_symbol,))
+    cursor.execute("SELECT price, timestamp FROM prices WHERE symbol = %s ORDER BY timestamp DESC", (coin_symbol,))
     data = cursor.fetchall()
+    cursor.close()
     conn.close()
 
     if not data:
         return Response(content="No data available", media_type="text/plain", status_code=404)
 
     prices = [row[0] for row in data]
-    
-    timestamps = []
-    for row in data:
-        try:
-            timestamps.append(datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S"))
-        except ValueError:
-            print(f"❌ Error parsing timestamp: {row[1]}")
-
-    timestamps = [datetime.strptime(row[1], "%Y-%m-%d %H:%M:%S") for row in data]
+    timestamps = [row[1] for row in data]
     
     plt.figure(figsize=(10, 5))
     plt.plot(timestamps, prices, marker="o", linestyle="-")
@@ -135,10 +133,9 @@ async def get_price_chart(coin_symbol: str):
     
     return Response(content=img_buf.getvalue(), media_type="image/png")
 
+# Send Price Chart via Email
 from email_system.email_sender import generate_and_send_email
 
 @app.get("/send-email")
 async def send_price_chart_email():
-    result = generate_and_send_email()
-    return {"status": "success", "message": result}
-
+    return generate_and_send_email()
