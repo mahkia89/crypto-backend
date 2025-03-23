@@ -62,8 +62,19 @@ async def fetch_prices_from_github():
     async with httpx.AsyncClient(timeout=15.0) as client:
         response = await client.get(GITHUB_RAW_URL)
         if response.status_code == 200:
-            return response.json()
+            try:
+                data = response.json()
+                if isinstance(data, str):  # If GitHub returns it as a string, parse it manually
+                    data = json.loads(data)
+                if not isinstance(data, list):  # Ensure it's a list of dictionaries
+                    raise ValueError("Invalid JSON format: Expected a list of dictionaries")
+                return data
+            except json.JSONDecodeError:
+                print("❌ Failed to parse JSON from GitHub!")
+                return None
+    print("❌ Failed to fetch prices from GitHub!")
     return None
+
 
 # Update database with new prices
 async def update_prices():
