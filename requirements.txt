@@ -22,6 +22,7 @@ numpy==2.2.4
 optional-django==0.1.0
 packaging==24.2
 pillow==11.1.0
+psycopg2==2.9.10
 pydantic==2.10.6
 pydantic_core==2.27.2
 pyparsing==3.2.1
