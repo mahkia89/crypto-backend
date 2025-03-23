@@ -3,6 +3,9 @@ import aiosqlite
 
 DATABASE_NAME = "crypto_prices.db"
 
+import os
+print(os.path.abspath("crypto_prices.db"))
+
 async def create_database():
     """ Create database and prices table if they don't exist. """
     async with aiosqlite.connect(DATABASE_NAME) as db:
