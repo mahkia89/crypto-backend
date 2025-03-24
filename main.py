@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import io
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI()
 
@@ -26,11 +27,11 @@ COINS = [
 
 # Database connection setup
 import asyncpg
-from sqlalchemy import create_engine, MetaData
+from sqlalchemy import create_engine, MetaData, Column, Integer, String, Float, DateTime
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-DATABASE_URL = "postgresql://postgres:HCDHjPQEaCieSfpisFOFBFLBortODAMi@postgres.railway.internal:5432/railway"
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Database connection setup
 engine = create_engine(DATABASE_URL, echo=True)
@@ -241,6 +242,8 @@ async def get_price_chart(coin_symbol: str):
     plt.close()
 
     return Response(content=img_buf.getvalue(), media_type="image/png")
+
+from email_system.email_sender import generate_and_send_email
 
 @app.get("/send-email")
 async def send_price_chart_email():
