@@ -1,98 +1,80 @@
-import sqlite3
-import aiosqlite
-
-DATABASE_NAME = "crypto_prices.db"
-
 import os
-print(os.path.abspath("crypto_prices.db"))
+import asyncpg
+import asyncio
+
+# لینک دیتابیس PostgreSQL
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:HCDHjPQEaCieSfpisFOFBFLBortODAMi@postgres.railway.internal:5432/railway")
 
 async def create_database():
-    """ Create database and prices table if they don't exist. """
-    async with aiosqlite.connect(DATABASE_NAME) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS prices (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                symbol TEXT NOT NULL,
-                price REAL NOT NULL,
-                source TEXT NOT NULL,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        await db.commit()
+    """ایجاد جدول prices در صورت عدم وجود"""
+    conn = await asyncpg.connect(DATABASE_URL)
+    await conn.execute("""
+        CREATE TABLE IF NOT EXISTS prices (
+            id SERIAL PRIMARY KEY,
+            symbol TEXT NOT NULL,
+            price REAL NOT NULL,
+            source TEXT NOT NULL,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    await conn.close()
 
 async def save_price(symbol, price, source):
-    """ Save fetched price data into the database. """
-    async with aiosqlite.connect(DATABASE_NAME) as db:
-        await db.execute("""
-            INSERT INTO prices (symbol, price, source)
-            VALUES (?, ?, ?)
-        """, (symbol, price, source))
-        await db.commit()
-
+    """ذخیره قیمت ارز دیجیتال در PostgreSQL"""
+    conn = await asyncpg.connect(DATABASE_URL)
+    await conn.execute("""
+        INSERT INTO prices (symbol, price, source)
+        VALUES ($1, $2, $3)
+    """, symbol, price, source)
+    await conn.close()
 
 async def get_stored_prices():
-    """ دریافت قیمت‌های ذخیره‌شده و مرتب‌سازی آنها """
-    conn = sqlite3.connect("crypto_prices.db")
-    cursor = conn.cursor()
-
-    # گرفتن آخرین قیمت هر ارز از هر منبع
-    cursor.execute("""
-        SELECT symbol, price, source, timestamp 
-        FROM prices 
-        WHERE (symbol, timestamp) IN 
-        (SELECT symbol, MAX(timestamp) FROM prices GROUP BY symbol, source)
+    """دریافت آخرین قیمت ذخیره‌شده هر ارز از هر منبع"""
+    conn = await asyncpg.connect(DATABASE_URL)
+    rows = await conn.fetch("""
+        SELECT symbol, price, source, timestamp FROM prices
+        WHERE (symbol, source, timestamp) IN (
+            SELECT symbol, source, MAX(timestamp) 
+            FROM prices 
+            GROUP BY symbol, source
+        )
         ORDER BY timestamp DESC
     """)
-    
-    prices = cursor.fetchall()
-    conn.close()
+    await conn.close()
 
-    # سازماندهی داده‌ها به‌صورت گروه‌بندی‌شده
+    # سازماندهی داده‌ها
     structured_data = {}
-    for row in prices:
-        coin_symbol = row[0].split('-')[-1].upper()  # استاندارد کردن نام ارز (BTC, ETH, DOGE)
+    for row in rows:
+        coin_symbol = row["symbol"].split('-')[-1].upper()
         if coin_symbol not in structured_data:
             structured_data[coin_symbol] = []
-        structured_data[coin_symbol].append({"price": row[1], "source": row[2], "timestamp": row[3]})
-    
-    print(structured_data)
+        structured_data[coin_symbol].append({
+            "price": row["price"],
+            "source": row["source"],
+            "timestamp": row["timestamp"]
+        })
 
     return structured_data
 
 async def get_all_stored_prices():
-    """ دریافت تمامی داده‌های ذخیره‌شده از دیتابیس """
-    conn = sqlite3.connect("crypto_prices.db")
-    cursor = conn.cursor()
-
-    # دریافت همه داده‌های ذخیره‌شده
-    cursor.execute("SELECT symbol, price, source, timestamp FROM prices ORDER BY timestamp DESC")
-    prices = cursor.fetchall()
-    conn.close()
+    """دریافت تمامی داده‌های ذخیره‌شده"""
+    conn = await asyncpg.connect(DATABASE_URL)
+    rows = await conn.fetch("SELECT symbol, price, source, timestamp FROM prices ORDER BY timestamp DESC")
+    await conn.close()
 
     # سازماندهی داده‌ها
     structured_data = {}
-    for row in prices:
-        coin_symbol = row[0].split('-')[-1].upper()
+    for row in rows:
+        coin_symbol = row["symbol"].split('-')[-1].upper()
         if coin_symbol not in structured_data:
             structured_data[coin_symbol] = []
-        structured_data[coin_symbol].append({"price": row[1], "source": row[2], "timestamp": row[3]})
+        structured_data[coin_symbol].append({
+            "price": row["price"],
+            "source": row["source"],
+            "timestamp": row["timestamp"]
+        })
 
     return structured_data
 
-# Connect to database
-conn = sqlite3.connect("crypto_prices.db")
-cursor = conn.cursor()
-
-# Create table to store prices
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS prices (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    symbol TEXT NOT NULL,
-    price REAL NOT NULL,
-    source TEXT NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-)
-""")
-
-conn.commit()
-conn.close()
+# اجرای اولیه برای ایجاد جدول
+asyncio.run(create_database())
