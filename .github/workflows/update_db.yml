@@ -1,0 +1,17 @@
+name: Update Database
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"  # اجرا هر ۱۰ دقیقه
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: pip install asyncpg requests
+      - name: Run update script
+        env:
+          DATABASE_URL: ${{ secrets.postgresql://postgres:HCDHjPQEaCieSfpisFOFBFLBortODAMi@postgres.railway.internal:5432/railway }}
+        run: python update_database.py
