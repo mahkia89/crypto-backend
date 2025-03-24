@@ -34,7 +34,7 @@ from sqlalchemy.ext.declarative import declarative_base
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Database connection setup
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL, pool_size=10, max_overflow=20)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Base class for ORM models
