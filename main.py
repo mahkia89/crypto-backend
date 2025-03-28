@@ -117,7 +117,7 @@ async def fetch_prices():
 
     print("✅ Prices updated in PostgreSQL.")
 
-@app.get("/", include_in_schema=False)
+@app.get("/")
 async def read_root():
     return {"message": "Hey, Crypto!"}
 
