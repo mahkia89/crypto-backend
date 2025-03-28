@@ -162,6 +162,8 @@ async def get_price_chart(coin_symbol: str):
 
     if not prices:
         return Response(content="No data available", media_type="text/plain", status_code=404)
+        
+    print("Prices data:", prices)
 
     timestamps = [p.timestamp for p in prices]
     price_data = [p.price for p in prices]
