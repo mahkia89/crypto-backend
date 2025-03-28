@@ -160,33 +160,51 @@ async def get_chart_data(coin_symbol: str):
         "data": [{"timestamp": p.timestamp, "price": p.price} for p in prices],
     }
 
+import matplotlib.pyplot as plt
+import io
+from fastapi import FastAPI, Response
+
+app = FastAPI()
+
 @app.get("/chart-image/{coin_symbol}")
 async def get_price_chart(coin_symbol: str):
-    """Generate and return a price chart as an image."""
+    """Generate and return a price chart with different sources as different lines."""
 
-    prices = await get_chart_prices(coin_symbol)
+    prices = await get_chart_prices(coin_symbol)  # Get price data from different sources
 
     if not prices:
         return Response(content="No data available", media_type="text/plain", status_code=404)
 
     print("Prices data:", prices)
 
-    # Flatten the data into a single list
-    all_prices = []
-    for source, data in prices.items():
-        all_prices.extend(data)
+    # Define color mapping for different sources
+    source_colors = {
+        "CoinPaprika": "blue",
+        "CoinGecko": "green",
+        "KuCoin": "red",
+        "Bitfinex": "orange",
+    }
 
-    if not all_prices:
-        return Response(content="No price data available", media_type="text/plain", status_code=404)
-
-    # Extract timestamps and price data
-    timestamps = [p["timestamp"] for p in all_prices]
-    price_data = [p["price"] for p in all_prices]
-
-    # Generate chart
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(timestamps, price_data, marker="o", linestyle="-", label=coin_symbol.upper())
-    ax.set_title(f"{coin_symbol.upper()} Price Trend")
+
+    for source, data in prices.items():
+        if not data:  # Skip empty data
+            continue
+
+        timestamps = [p["timestamp"] for p in data]  # Extract timestamps
+        price_data = [p["price"] for p in data]      # Extract price values
+
+        # Sort data by timestamp (if necessary)
+        sorted_data = sorted(zip(timestamps, price_data), key=lambda x: x[0])
+        timestamps, price_data = zip(*sorted_data)
+
+        # Choose color or default to black if not in mapping
+        color = source_colors.get(source, "black")
+
+        ax.plot(timestamps, price_data, marker="o", linestyle="-", label=source, color=color)
+
+    # Set chart labels and title
+    ax.set_title(f"{coin_symbol.upper()} Price Trend from Different Sources")
     ax.set_xlabel("Time")
     ax.set_ylabel("Price (USD)")
     ax.legend()
@@ -200,6 +218,7 @@ async def get_price_chart(coin_symbol: str):
     plt.close()
 
     return Response(content=img_buf.getvalue(), media_type="image/png")
+
 
 from email_system.email_sender import generate_and_send_email
 
