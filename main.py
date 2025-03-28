@@ -30,8 +30,7 @@ from sqlalchemy import create_engine, MetaData, Column, Integer, String, Float, 
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 
-DATABASE_URL = "postgresql://postgres:HCDHjPQEaCieSfpisFOFBFLBortODAMi@postgres.railway.internal:5432/railway"
-
+DATABASE_URL = "postgresql://crypto_db_b52e_user:mTcqgolkW8xSYVgngMhpp4eHKZeOJx8v@dpg-cvfqephopnds73bcc2a0-a/crypto_db_b52e"
 # Database connection setup
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
