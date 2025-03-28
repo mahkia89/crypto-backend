@@ -168,11 +168,20 @@ async def get_price_chart(coin_symbol: str):
 
     if not prices:
         return Response(content="No data available", media_type="text/plain", status_code=404)
-        
+
     print("Prices data:", prices)
 
-    timestamps = [p.timestamp for p in prices]
-    price_data = [p.price for p in prices]
+    # Flatten the data into a single list
+    all_prices = []
+    for source, data in prices.items():
+        all_prices.extend(data)
+
+    if not all_prices:
+        return Response(content="No price data available", media_type="text/plain", status_code=404)
+
+    # Extract timestamps and price data
+    timestamps = [p["timestamp"] for p in all_prices]
+    price_data = [p["price"] for p in all_prices]
 
     # Generate chart
     fig, ax = plt.subplots(figsize=(10, 5))
