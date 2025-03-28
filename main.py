@@ -29,8 +29,11 @@ async def fetch_price_from_api(url, source, coin_id):
             if response.status_code == 200:
                 try:
                     data = response.json()
-                    print(f"Data from {source} for {coin_id}: {data}")  # Log the response
-                    return {"source": source, "coin": coin_id, "price": data}
+                    if isinstance(data, dict) and "usd" in data:
+                        print(f"Data from {source} for {coin_id}: {data}")  # Log the response
+                        return {"source": source, "coin": coin_id, "price": data}
+                    else:
+                        print(f"⚠️ Invalid or missing data in response from {source} for {coin_id}")
                 except ValueError:
                     print(f"⚠️ Failed to parse JSON from {source} for {coin_id}")
             else:
@@ -38,6 +41,7 @@ async def fetch_price_from_api(url, source, coin_id):
         except httpx.ReadTimeout:
             print(f"⚠️ Timeout error: {source} for {coin_id}")
     return {"source": source, "coin": coin_id, "price": None}
+
 
 
 async def get_price_coinpaprika(coin_id):
@@ -49,10 +53,18 @@ async def get_price_coinpaprika(coin_id):
     return None
 
 async def get_price_coingecko(coin_id):
-    """Get price from CoinGecko"""
+    """Get price from CoinGecko with retries"""
     url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
-    result = await fetch_price_from_api(url, "CoinGecko", coin_id)
-    return {"source": "CoinGecko", "coin": coin_id, "price": result["price"][coin_id]['usd']} if result["price"] else None
+    retries = 5
+    for _ in range(retries):
+        result = await fetch_price_from_api(url, "CoinGecko", coin_id)
+        if result["price"]:
+            return {"source": "CoinGecko", "coin": coin_id, "price": result["price"][coin_id]["usd"]}
+        else:
+            print(f"⚠️ Failed to fetch data for {coin_id} from CoinGecko, retrying...")
+            await asyncio.sleep(2)  # Sleep before retrying
+    return None
+
 
 async def get_price_bitfinex(coin_id):
     """Get price from Bitfinex"""
@@ -64,8 +76,11 @@ async def get_price_bitfinex(coin_id):
     if coin_id not in symbol_map:
         return None
     url = f"https://api-pub.bitfinex.com/v2/ticker/{symbol_map[coin_id]}"
-    result = await fetch_price_from_api(url, "Bitfinex", coin_id)
-    return {"source": "Bitfinex", "coin": coin_id, "price": result["price"][6]} 
+    if result["price"] and isinstance(result["price"], list) and len(result["price"]) > 6:
+        return {"source": "Bitfinex", "coin": coin_id, "price": result["price"][6]}
+    else:
+        print(f"⚠️ Data missing for {coin_id} from Bitfinex")
+        return None
 
 
 async def get_price_kucoin(coin_id):
