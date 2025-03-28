@@ -27,17 +27,26 @@ async def fetch_price_from_api(url, source, coin_id):
         try:
             response = await client.get(url)
             if response.status_code == 200:
-                data = response.json()
-                return {"source": source, "coin": coin_id, "price": data}
+                try:
+                    data = response.json()
+                    print(f"Data from {source} for {coin_id}: {data}")  # Log the response
+                    return {"source": source, "coin": coin_id, "price": data}
+                except ValueError:
+                    print(f"⚠️ Failed to parse JSON from {source} for {coin_id}")
+            else:
+                print(f"⚠️ Error from {source} for {coin_id}: {response.status_code}")
         except httpx.ReadTimeout:
             print(f"⚠️ Timeout error: {source} for {coin_id}")
     return {"source": source, "coin": coin_id, "price": None}
+
 
 async def get_price_coinpaprika(coin_id):
     """Get price from CoinPaprika"""
     url = f"https://api.coinpaprika.com/v1/tickers/{coin_id}"
     result = await fetch_price_from_api(url, "CoinPaprika", coin_id)
-    return {"source": "CoinPaprika", "coin": coin_id, "price": result["price"]['quotes']['USD']['price']} if result["price"] else None
+    if result["price"] and isinstance(result["price"], dict):
+        return {"source": "CoinPaprika", "coin": coin_id, "price": result["price"]['quotes']['USD']['price']}
+    return None
 
 async def get_price_coingecko(coin_id):
     """Get price from CoinGecko"""
