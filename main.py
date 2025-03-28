@@ -110,20 +110,9 @@ async def startup_event():
 @app.get("/stored-prices")
 async def get_stored_prices_api():
     """ API to get latest stored prices from the database """
-    db = SessionLocal()
-    prices = db.query(Price).order_by(Price.timestamp.desc()).limit(50).all()
-    db.close()
-    print("📈 Fetched stored prices.")
+    prices = await get_stored_prices()
     return {"status": "success", "data": prices}
 
-@app.get("/all-prices")
-async def get_all_prices_api():
-    """ API to get all stored prices from the database """
-    db = SessionLocal()
-    prices = db.query(Price).all()
-    db.close()
-    print("📈 Fetched all stored prices.")
-    return {"status": "success", "data": prices}
 
 @app.get("/chart-data")
 async def get_chart_data():
