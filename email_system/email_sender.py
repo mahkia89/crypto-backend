@@ -17,10 +17,10 @@ def fetch_crypto_data():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     query = """
-        SELECT currency, source, timestamp, price
+        SELECT symbol, source, timestamp, price
         FROM prices
         WHERE timestamp >= NOW() - INTERVAL '24 HOURS'
-        ORDER BY currency, source, timestamp;
+        ORDER BY symbol, source, timestamp;
     """
     cur.execute(query)
     data = cur.fetchall()
@@ -31,17 +31,17 @@ def fetch_crypto_data():
 def generate_chart(data):
     crypto_dict = {}
     
-    for currency, source, timestamp, price in data:
-        if currency not in crypto_dict:
-            crypto_dict[currency] = {}
-        if source not in crypto_dict[currency]:
-            crypto_dict[currency][source] = {'timestamps': [], 'prices': []}
+    for symbol, source, timestamp, price in data:
+        if symbol not in crypto_dict:
+            crypto_dict[symbol] = {}
+        if source not in crypto_dict[symbol]:
+            crypto_dict[symbol][source] = {'timestamps': [], 'prices': []}
         
-        crypto_dict[currency][source]['timestamps'].append(timestamp)
-        crypto_dict[currency][source]['prices'].append(price)
+        crypto_dict[symbol][source]['timestamps'].append(timestamp)
+        crypto_dict[symbol][source]['prices'].append(price)
 
     images = {}
-    for currency, sources in crypto_dict.items():
+    for symbol, sources in crypto_dict.items():
         plt.figure(figsize=(8, 5))
         for source, values in sources.items():
             color = (random.random(), random.random(), random.random())  
@@ -49,7 +49,7 @@ def generate_chart(data):
         
         plt.xlabel('Time')
         plt.ylabel('Price')
-        plt.title(f'Price Trend of {currency}')
+        plt.title(f'Price Trend of {symbol}')
         plt.legend()
         plt.xticks(rotation=45)
         
@@ -57,7 +57,7 @@ def generate_chart(data):
         plt.savefig(buf, format='png')
         plt.close()
         buf.seek(0)
-        images[currency] = base64.b64encode(buf.getvalue()).decode('utf-8')
+        images[symbol] = base64.b64encode(buf.getvalue()).decode('utf-8')
 
     return images
 
@@ -75,9 +75,9 @@ def send_email(images):
     body = "Here are the latest 24-hour price trends for cryptocurrencies.\n\n"
     msg.attach(MIMEText(body, "plain"))
 
-    for currency, img_data in images.items():
+    for symbol, img_data in images.items():
         img_bytes = base64.b64decode(img_data)
-        img_part = MIMEImage(img_bytes, name=f"{currency}.png")
+        img_part = MIMEImage(img_bytes, name=f"{symbol}.png")
         msg.attach(img_part)
 
     with smtplib.SMTP_SSL("smtp.example.com", 465) as server:
