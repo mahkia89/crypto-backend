@@ -3,7 +3,7 @@ import asyncio
 import httpx
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
-from database import save_price, create_database
+from database import save_price, create_database, get_chart_prices, get_stored_prices
 
 app = FastAPI()
 
@@ -114,48 +114,39 @@ async def get_stored_prices_api():
     return {"status": "success", "data": prices}
 
 
-@app.get("/chart-data")
-async def get_chart_data():
-    """ Return chart data in JSON format """
-    db = SessionLocal()
-    prices = db.query(Price).order_by(Price.timestamp.desc()).limit(50).all()
-    db.close()
+@app.get("/chart-data/{coin_symbol}")
+async def get_chart_data(coin_symbol: str):
+    """Return chart data for a specific coin in JSON format."""
+    prices = get_chart_prices(coin_symbol)
 
     if not prices:
-        print("❌ No data found in database!")
         return {"status": "error", "message": "No data available."}
 
-    print("✅ Data fetched from DB:", prices)
-
-    return {"status": "success", "data": prices}
+    return {
+        "status": "success",
+        "data": [{"timestamp": p.timestamp, "price": p.price} for p in prices],
+    }
 
 @app.get("/chart-image/{coin_symbol}")
 async def get_price_chart(coin_symbol: str):
-    print(f"📊 Generating chart for {coin_symbol}")
-
-    # Connect to the database
-    db = SessionLocal()
-
-    # Get data for the specified coin
-    prices = db.query(Price).filter(Price.symbol == coin_symbol).order_by(Price.timestamp.desc()).all()
-    db.close()
+    """Generate and return a price chart as an image."""
+    prices = get_chart_prices(coin_symbol)
 
     if not prices:
         return Response(content="No data available", media_type="text/plain", status_code=404)
 
-    # Organize data
-    price_data = [p.price for p in prices]
     timestamps = [p.timestamp for p in prices]
+    price_data = [p.price for p in prices]
 
     # Generate chart
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(timestamps, price_data, marker="o", linestyle="-", label=coin_symbol)
-    ax.set_title(f"{coin_symbol} Price Trend")
+    ax.plot(timestamps, price_data, marker="o", linestyle="-", label=coin_symbol.upper())
+    ax.set_title(f"{coin_symbol.upper()} Price Trend")
     ax.set_xlabel("Time")
     ax.set_ylabel("Price (USD)")
     ax.legend()
     ax.grid(True)
-    ax.tick_params(axis='x', rotation=45)
+    ax.tick_params(axis="x", rotation=45)
 
     # Save chart in memory
     img_buf = io.BytesIO()
