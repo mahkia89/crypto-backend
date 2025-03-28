@@ -1,0 +1,22 @@
+name: Update Render Database
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # Runs every 10 minutes
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  update-database:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up PostgreSQL Client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Update Database on Render
+        env:
+          DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
+        run: |
+          psql $DATABASE_URL -f update_script.sql
