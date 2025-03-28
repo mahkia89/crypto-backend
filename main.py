@@ -65,7 +65,11 @@ async def get_price_bitfinex(coin_id):
         return None
     url = f"https://api-pub.bitfinex.com/v2/ticker/{symbol_map[coin_id]}"
     result = await fetch_price_from_api(url, "Bitfinex", coin_id)
-    return {"source": "Bitfinex", "coin": coin_id, "price": result["price"][6]} if result["price"] else None
+   if result and "price" in result:
+        return {"source": "Bitfinex", "coin": coin_id, "price": result["price"][6]}  # Adjust index if necessary
+    else:
+        logging.error(f"No price data found for {coin_id} from Bitfinex.")
+        return None
 
 async def get_price_kucoin(coin_id):
     """Get price from KuCoin"""
@@ -96,6 +100,9 @@ async def fetch_prices():
             await save_price(result["coin"].upper(), float(result["price"]), result["source"])
 
     print("✅ Prices updated in PostgreSQL.")
+@app.get("/")
+async def read_root():
+    return {"message": "Hey, Crypto!"}
 
 @app.get("/prices")
 async def get_prices():
