@@ -4,6 +4,9 @@ import httpx
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 from database import save_price, create_database, get_chart_prices, get_stored_prices
+import matplotlib.pyplot as plt
+import io
+from fastapi.responses import Response
 
 app = FastAPI()
 
@@ -55,9 +58,9 @@ async def get_price_coinpaprika(coin_id):
 async def get_price_coingecko(coin_id):
     """Get price from CoinGecko with retries"""
     url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
-    result = await fetch_price_from_api(url, "CoinPaprika", coin_id)
+    result = await fetch_price_from_api(url, "CoinGecko", coin_id)
     if result["price"] and isinstance(result["price"], dict):
-        return {"source": "CoinGecko", "coin": coin_id, "price": result["price"]['quotes']['USD']['price']}
+        return {"source": "CoinGecko", "coin": coin_id, "price": result["price"].get(coin_id, {}).get("usd")}
     return None
     
 async def get_price_bitfinex(coin_id):
@@ -70,6 +73,7 @@ async def get_price_bitfinex(coin_id):
     if coin_id not in symbol_map:
         return None
     url = f"https://api-pub.bitfinex.com/v2/ticker/{symbol_map[coin_id]}"
+    result = await fetch_price_from_api(url, "Bitfinex", coin_id)
     if result["price"] and isinstance(result["price"], list) and len(result["price"]) > 6:
         return {"source": "Bitfinex", "coin": coin_id, "price": result["price"][6]}
     else:
@@ -88,7 +92,7 @@ async def get_price_kucoin(coin_id):
         return None
     url = f"https://api.kucoin.com/api/v1/market/orderbook/level1?symbol={symbol_map[coin_id]}"
     result = await fetch_price_from_api(url, "KuCoin", coin_id)
-    return {"source": "KuCoin", "coin": coin_id, "price": result["price"]['data']['price']} if result["price"] else None
+    return {"source": "KuCoin", "coin": coin_id, "price": result["price"].get("data", {}).get("price")} if result["price"] else None
 
 async def fetch_prices():
     """Fetch prices from multiple APIs and save them in the database."""
@@ -158,7 +162,7 @@ async def get_price_chart(coin_symbol: str):
     if not prices:
         return Response(content="No data available", media_type="text/plain", status_code=404)
 
-    timestamps = [p["timestamp"] for p in prices]  # Now it works
+    timestamps = [p.timestamp for p in prices]
     price_data = [p.price for p in prices]
 
     # Generate chart
