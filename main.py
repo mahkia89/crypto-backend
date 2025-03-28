@@ -65,11 +65,8 @@ async def get_price_bitfinex(coin_id):
         return None
     url = f"https://api-pub.bitfinex.com/v2/ticker/{symbol_map[coin_id]}"
     result = await fetch_price_from_api(url, "Bitfinex", coin_id)
-   if result and "price" in result:
-        return {"source": "Bitfinex", "coin": coin_id, "price": result["price"][6]}  # Adjust index if necessary
-    else:
-        logging.error(f"No price data found for {coin_id} from Bitfinex.")
-        return None
+    return {"source": "Bitfinex", "coin": coin_id, "price": result["price"][6]} 
+
 
 async def get_price_kucoin(coin_id):
     """Get price from KuCoin"""
