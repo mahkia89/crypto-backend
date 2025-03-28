@@ -46,7 +46,7 @@ async def get_stored_prices():
     """)
     await conn.close()
 
-    structured_data = {}
+    structured_data1 = {}
     for row in rows:
         coin_symbol = row["symbol"].split('-')[-1].upper()
         if coin_symbol not in structured_data:
@@ -56,6 +56,8 @@ async def get_stored_prices():
             "source": row["source"],
             "timestamp": row["timestamp"]
         })
+
+    return structured_data1
 
 
     async def get_chart_prices(coin_symbol):
@@ -80,8 +82,5 @@ async def get_stored_prices():
             "timestamp": row["timestamp"],
             "price": row["price"]
         })
-
-    return structured_data
-
 
     return structured_data
