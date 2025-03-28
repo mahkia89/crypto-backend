@@ -24,7 +24,9 @@ COINS = [
     ("doge-dogecoin", "dogecoin")
 ]
 
-async def fetch_price_from_api(url, source, coin_id):
+import httpx
+
+async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", price_path=None):
     """Generic function to fetch cryptocurrency prices from an API."""
     async with httpx.AsyncClient(timeout=15.0) as client:
         try:
@@ -34,52 +36,50 @@ async def fetch_price_from_api(url, source, coin_id):
             if response.status_code == 200:
                 try:
                     data = response.json()
-                    if isinstance(data, dict) and "usd" in data:
-                        print(f"Data from {source} for {coin_id}: {data}")  # Log parsed data
-                        return {"source": source, "coin": coin_id, "price": data}
-                    else:
-                        print(f"⚠️ Invalid or missing data in response from {source} for {coin_id}")
+                    print(f"Parsed data from {source} for {coin_id}: {data}")  # Log parsed data
+                    
+                    if expected_structure == "dict" and isinstance(data, dict):
+                        # Navigate through the nested dictionary using price_path
+                        price = data
+                        for key in price_path:
+                            price = price.get(key, {})
+                        if isinstance(price, (int, float)):
+                            return {"source": source, "coin": coin_id, "price": price}
+
+                    elif expected_structure == "list" and isinstance(data, list) and len(data) > 6:
+                        return {"source": source, "coin": coin_id, "price": data[6]}
+
+                    print(f"⚠️ Invalid or missing data in response from {source} for {coin_id}")
                 except ValueError:
                     print(f"⚠️ Failed to parse JSON from {source} for {coin_id}")
             else:
                 print(f"⚠️ Error from {source} for {coin_id}: {response.status_code}")
         except httpx.ReadTimeout:
             print(f"⚠️ Timeout error: {source} for {coin_id}")
+    
     return {"source": source, "coin": coin_id, "price": None}
 
 async def get_price_coinpaprika(coin_id):
     """Get price from CoinPaprika"""
     url = f"https://api.coinpaprika.com/v1/tickers/{coin_id}"
-    result = await fetch_price_from_api(url, "CoinPaprika", coin_id)
-    if result["price"] and isinstance(result["price"], dict):
-        return {"source": "CoinPaprika", "coin": coin_id, "price": result["price"]['quotes']['USD']['price']}
-    return None
+    return await fetch_price_from_api(url, "CoinPaprika", coin_id, expected_structure="dict", price_path=["quotes", "USD", "price"])
 
 async def get_price_coingecko(coin_id):
-    """Get price from CoinGecko with retries"""
+    """Get price from CoinGecko"""
     url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
-    result = await fetch_price_from_api(url, "CoinGecko", coin_id)
-    if result["price"] and isinstance(result["price"], dict):
-        return {"source": "CoinGecko", "coin": coin_id, "price": result["price"].get(coin_id, {}).get("usd")}
-    return None
-    
+    return await fetch_price_from_api(url, "CoinGecko", coin_id, expected_structure="dict", price_path=[coin_id, "usd"])
+
 async def get_price_bitfinex(coin_id):
     """Get price from Bitfinex"""
     symbol_map = {
         "bitcoin": "tBTCUSD",
         "ethereum": "tETHUSD",
     }
-    
     if coin_id not in symbol_map:
         return None
+    
     url = f"https://api-pub.bitfinex.com/v2/ticker/{symbol_map[coin_id]}"
-    result = await fetch_price_from_api(url, "Bitfinex", coin_id)
-    if result["price"] and isinstance(result["price"], list) and len(result["price"]) > 6:
-        return {"source": "Bitfinex", "coin": coin_id, "price": result["price"][6]}
-    else:
-        print(f"⚠️ Data missing for {coin_id} from Bitfinex")
-        return None
-
+    return await fetch_price_from_api(url, "Bitfinex", coin_id, expected_structure="list")
 
 async def get_price_kucoin(coin_id):
     """Get price from KuCoin"""
@@ -90,9 +90,9 @@ async def get_price_kucoin(coin_id):
     }
     if coin_id not in symbol_map:
         return None
+
     url = f"https://api.kucoin.com/api/v1/market/orderbook/level1?symbol={symbol_map[coin_id]}"
-    result = await fetch_price_from_api(url, "KuCoin", coin_id)
-    return {"source": "KuCoin", "coin": coin_id, "price": result["price"].get("data", {}).get("price")} if result["price"] else None
+    return await fetch_price_from_api(url, "KuCoin", coin_id, expected_structure="dict", price_path=["data", "price"])
 
 async def fetch_prices():
     """Fetch prices from multiple APIs and save them in the database."""
