@@ -5,10 +5,16 @@ import asyncio
 # Database URL from environment variables
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://crypto_db_b52e_user:mTcqgolkW8xSYVgngMhpp4eHKZeOJx8v@dpg-cvfqephopnds73bcc2a0-a/crypto_db_b52e")
 
-pool = await asyncpg.create_pool(DATABASE_URL)
+async def create_pool():
+    return await asyncpg.create_pool(DATABASE_URL)
 
-async def get_db_connection():
-    return pool.acquire()
+async def get_pool():
+    global pool
+    if pool is None:
+        pool = await create_pool()
+    return pool
+
+pool = None 
 
 async def create_database():
     """Ensure the `prices` table exists."""
