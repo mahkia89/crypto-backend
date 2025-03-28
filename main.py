@@ -130,12 +130,13 @@ async def get_chart_data(coin_symbol: str):
 @app.get("/chart-image/{coin_symbol}")
 async def get_price_chart(coin_symbol: str):
     """Generate and return a price chart as an image."""
-    prices = get_chart_prices(coin_symbol)
+
+    prices = await get_chart_prices(coin_symbol)
 
     if not prices:
         return Response(content="No data available", media_type="text/plain", status_code=404)
 
-    timestamps = [p.timestamp for p in prices]
+    timestamps = [p["timestamp"] for p in prices]  # Now it works
     price_data = [p.price for p in prices]
 
     # Generate chart
