@@ -43,8 +43,14 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
                         price = data
                         for key in price_path:
                             price = price.get(key, {})
-                        if isinstance(price, (int, float)):
-                            return {"source": source, "coin": coin_id, "price": price}
+                        if isinstance(price, str) and price.replace('.', '', 1).isdigit():
+                            price = float(price)  # تبدیل رشته به عدد اعشاری
+                        elif not isinstance(price, (int, float)):
+                            print(f"⚠️ Unexpected price format from {source} for {coin_id}: {price}")
+                            return None
+
+                        return {"source": source, "coin": coin_id, "price": price}
+
 
                     elif expected_structure == "list" and isinstance(data, list) and len(data) > 6:
                         return {"source": source, "coin": coin_id, "price": data[6]}
