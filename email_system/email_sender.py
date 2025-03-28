@@ -1,117 +1,90 @@
-import io
+import os
+import psycopg2
 import smtplib
+import matplotlib.pyplot as plt
+import io
+import base64
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
-import matplotlib.pyplot as plt
-from datetime import datetime
-import sqlite3
-from dotenv import load_dotenv
-import os
+import random
 
-# بارگذاری تنظیمات از فایل .env
-load_dotenv()
+# connect to db
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://crypto_db_b52e_user:mTcqgolkW8xSYVgngMhpp4eHKZeOJx8v@dpg-cvfqephopnds73bcc2a0-a/crypto_db_b52e")
 
-# اطلاعات ایمیل
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 587
-EMAIL_ADDRESS = os.getenv("EMAIL_USER")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASS")
 
-def create_chart(symbol, prices_by_source, timestamps_by_source):
-    """ ایجاد نمودار قیمت برای هر ارز با چندین منبع """
-    plt.figure(figsize=(12, 6))
-
-    colors = ["blue", "red", "green", "orange", "purple"]
-    for i, (source, prices) in enumerate(prices_by_source.items()):
-        timestamps = timestamps_by_source[source]
-        if prices and timestamps:
-            plt.plot(timestamps, prices, marker="o", linestyle="-", label=source, color=colors[i % len(colors)])
-
-    plt.xlabel("Time")
-    plt.ylabel("Price (USD)")
-    plt.title(f"{symbol} Price Trend")
-    plt.legend(title="Source")
-    plt.grid(True)
-    plt.gcf().autofmt_xdate()  # تنظیم فرمت تاریخ
-
-    img_buf = io.BytesIO()
-    timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M")  # ساخت نام فایل بر اساس تاریخ
-    filename = f"{symbol}_{timestamp_str}.png"
-    plt.savefig(img_buf, format="png", bbox_inches="tight")
-    img_buf.seek(0)
-    plt.close()
-    
-    return img_buf, filename  # برگرداندن نام فایل همراه با تصویر
-
-def send_email(to_email, subject, message, chart_images):
-    """ ارسال ایمیل با پیوست نمودارها """
-    try:
-        msg = MIMEMultipart()
-        msg["From"] = EMAIL_ADDRESS
-        msg["To"] = to_email
-        msg["Subject"] = subject
-        msg.attach(MIMEText(message, "plain"))
-
-        # اضافه کردن نمودارها به ایمیل
-        for img_buf, filename in chart_images:
-            if img_buf is not None:
-                img_buf.seek(0)
-                image = MIMEImage(img_buf.read(), name=filename)
-                msg.attach(image)
-
-        # ارسال ایمیل
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.starttls()
-            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
-            server.sendmail(EMAIL_ADDRESS, to_email, msg.as_string())
-        
-        print("✅ ایمیل با موفقیت ارسال شد.")
-        return {"status": "success", "message": "Email sent successfully"}
-    except Exception as e:
-        print(f"❌ خطا در ارسال ایمیل: {e}")
-        return {"status": "error", "message": str(e)}
-
-def generate_and_send_email():
-    """ این تابع برای تولید نمودارها و ارسال ایمیل است """
-    conn = sqlite3.connect("crypto_prices.db")
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT symbol, price, timestamp, source
-        FROM prices 
-        WHERE timestamp >= datetime('now', '-1 day') 
-        ORDER BY symbol, source, timestamp ASC
-    """)
-    data = cursor.fetchall()
+def fetch_crypto_data():
+    conn = psycopg2.connect(DATABASE_URL)
+    cur = conn.cursor()
+    query = """
+        SELECT currency, source, timestamp, price
+        FROM crypto_prices
+        WHERE timestamp >= NOW() - INTERVAL '24 HOURS'
+        ORDER BY currency, source, timestamp;
+    """
+    cur.execute(query)
+    data = cur.fetchall()
     conn.close()
+    return data
 
-    if not data:
-        return {"status": "error", "message": "No data available."}
 
-    # تقسیم داده‌ها بر اساس هر ارز و منبع
-    prices_by_source = {"BTC": {}, "ETH": {}, "DOGE": {}}
-    timestamps_by_source = {"BTC": {}, "ETH": {}, "DOGE": {}}
+def generate_chart(data):
+    crypto_dict = {}
+    
+    for currency, source, timestamp, price in data:
+        if currency not in crypto_dict:
+            crypto_dict[currency] = {}
+        if source not in crypto_dict[currency]:
+            crypto_dict[currency][source] = {'timestamps': [], 'prices': []}
+        
+        crypto_dict[currency][source]['timestamps'].append(timestamp)
+        crypto_dict[currency][source]['prices'].append(price)
 
-    for symbol, price, timestamp, source in data:
-        if symbol in prices_by_source:
-            if source not in prices_by_source[symbol]:
-                prices_by_source[symbol][source] = []
-                timestamps_by_source[symbol][source] = []
-            prices_by_source[symbol][source].append(price)
-            timestamps_by_source[symbol][source].append(datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S"))
+    images = {}
+    for currency, sources in crypto_dict.items():
+        plt.figure(figsize=(8, 5))
+        for source, values in sources.items():
+            color = (random.random(), random.random(), random.random())  
+            plt.plot(values['timestamps'], values['prices'], label=source, color=color)
+        
+        plt.xlabel('Time')
+        plt.ylabel('Price')
+        plt.title(f'Price Trend of {currency}')
+        plt.legend()
+        plt.xticks(rotation=45)
+        
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png')
+        plt.close()
+        buf.seek(0)
+        images[currency] = base64.b64encode(buf.getvalue()).decode('utf-8')
 
-    # ساخت نمودارها
-    chart_images = []
-    for symbol in ["BTC", "ETH", "DOGE"]:
-        if prices_by_source[symbol]:  # فقط در صورتی که داده‌ای برای آن ارز وجود دارد
-            chart, filename = create_chart(symbol, prices_by_source[symbol], timestamps_by_source[symbol])
-            if chart:
-                chart_images.append((chart, filename))
+    return images
 
-    # ارسال ایمیل
-    recipient = "saragolbashi@gmail.com"
-    subject = "Crypto Price Trend Charts"
-    message = "سلام،\nدر این ایمیل نمودارهای روند قیمت ارزهای دیجیتال برای شما ارسال شده است."
 
-    return send_email(recipient, subject, message, chart_images)
+def send_email(images):
+    sender_email = os.getenv("EMAIL_USER")
+    receiver_email = os.getenv("EMAIL_RECIEVER")
+    password = os.getenv("EMAIL_PASS")
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = receiver_email
+    msg["Subject"] = "Daily Crypto Price Charts"
+
+    body = "Here are the latest 24-hour price trends for cryptocurrencies.\n\n"
+    msg.attach(MIMEText(body, "plain"))
+
+    for currency, img_data in images.items():
+        img_bytes = base64.b64decode(img_data)
+        img_part = MIMEImage(img_bytes, name=f"{currency}.png")
+        msg.attach(img_part)
+
+    with smtplib.SMTP_SSL("smtp.example.com", 465) as server:
+        server.login(sender_email, password)
+        server.sendmail(sender_email, receiver_email, msg.as_string())
+
+
+crypto_data = fetch_crypto_data()
+charts = generate_chart(crypto_data)
+send_email(charts)
