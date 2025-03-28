@@ -18,7 +18,7 @@ def fetch_crypto_data():
     cur = conn.cursor()
     query = """
         SELECT currency, source, timestamp, price
-        FROM crypto_prices
+        FROM prices
         WHERE timestamp >= NOW() - INTERVAL '24 HOURS'
         ORDER BY currency, source, timestamp;
     """
