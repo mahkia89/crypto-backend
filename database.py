@@ -36,22 +36,18 @@ async def get_stored_prices():
     """Fetch the latest stored price for each cryptocurrency from each source."""
     conn = await get_db_connection()
     rows = await conn.fetch("""
-        SELECT symbol, price, source, timestamp FROM prices
-        WHERE (symbol, source, timestamp) IN (
-            SELECT symbol, source, MAX(timestamp) 
-            FROM prices 
-            GROUP BY symbol, source
-        )
-        ORDER BY timestamp DESC
+       SELECT DISTINCT ON (symbol, source) symbol, price, source, timestamp
+        FROM prices
+        ORDER BY symbol, source, timestamp DESC
     """)
     await conn.close()
 
     structured_data1 = {}
     for row in rows:
         coin_symbol = row["symbol"].split('-')[-1].upper()
-        if coin_symbol not in structured_data:
-            structured_data[coin_symbol] = []
-        structured_data[coin_symbol].append({
+        if coin_symbol not in structured_data1:
+            structured_data1[coin_symbol] = []
+        structured_data1[coin_symbol].append({
             "price": row["price"],
             "source": row["source"],
             "timestamp": row["timestamp"]
@@ -66,7 +62,7 @@ async def get_chart_prices(coin_symbol):
     rows = await conn.fetch("""
         SELECT price, source, timestamp 
         FROM prices 
-        WHERE symbol = $1 
+        WHERE symbol = UPPER($1) 
         ORDER BY timestamp ASC
     """, coin_symbol.upper())  # Ensure symbol is in uppercase
 
