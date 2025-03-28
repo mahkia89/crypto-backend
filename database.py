@@ -57,4 +57,31 @@ async def get_stored_prices():
             "timestamp": row["timestamp"]
         })
 
+
+    async def get_chart_prices(coin_symbol):
+    """Fetch historical prices for a specific cryptocurrency, grouped by source."""
+    conn = await get_db_connection()
+    rows = await conn.fetch("""
+        SELECT price, source, timestamp 
+        FROM prices 
+        WHERE symbol = $1 
+        ORDER BY timestamp ASC
+    """, coin_symbol.upper())  # Ensure symbol is in uppercase
+
+    await conn.close()
+
+    structured_data = {}
+    for row in rows:
+        source = row["source"]
+        if source not in structured_data:
+            structured_data[source] = []  # Create a list for each source
+
+        structured_data[source].append({
+            "timestamp": row["timestamp"],
+            "price": row["price"]
+        })
+
+    return structured_data
+
+
     return structured_data
