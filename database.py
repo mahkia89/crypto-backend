@@ -3,7 +3,7 @@ import asyncpg
 import asyncio
 
 # لینک دیتابیس PostgreSQL
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:HCDHjPQEaCieSfpisFOFBFLBortODAMi@postgres.railway.internal:5432/railway")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://crypto_db_b52e_user:mTcqgolkW8xSYVgngMhpp4eHKZeOJx8v@dpg-cvfqephopnds73bcc2a0-a/crypto_db_b52e")
 
 async def create_database():
     """ایجاد جدول prices در صورت عدم وجود"""
