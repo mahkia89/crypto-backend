@@ -117,7 +117,7 @@ async def get_stored_prices_api():
 @app.get("/chart-data/{coin_symbol}")
 async def get_chart_data(coin_symbol: str):
     """Return chart data for a specific coin in JSON format."""
-    prices = get_chart_prices(coin_symbol)
+    prices = await get_chart_prices(coin_symbol)
 
     if not prices:
         return {"status": "error", "message": "No data available."}
