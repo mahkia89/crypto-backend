@@ -29,11 +29,13 @@ async def fetch_price_from_api(url, source, coin_id):
     async with httpx.AsyncClient(timeout=15.0) as client:
         try:
             response = await client.get(url)
+            print(f"Raw response from {source}: {response.text}")  # Log full response
+            
             if response.status_code == 200:
                 try:
                     data = response.json()
                     if isinstance(data, dict) and "usd" in data:
-                        print(f"Data from {source} for {coin_id}: {data}", type(prices))  # Log the response
+                        print(f"Data from {source} for {coin_id}: {data}")  # Log parsed data
                         return {"source": source, "coin": coin_id, "price": data}
                     else:
                         print(f"⚠️ Invalid or missing data in response from {source} for {coin_id}")
@@ -44,8 +46,6 @@ async def fetch_price_from_api(url, source, coin_id):
         except httpx.ReadTimeout:
             print(f"⚠️ Timeout error: {source} for {coin_id}")
     return {"source": source, "coin": coin_id, "price": None}
-
-
 
 async def get_price_coinpaprika(coin_id):
     """Get price from CoinPaprika"""
@@ -110,7 +110,8 @@ async def fetch_prices():
             await save_price(result["coin"].upper(), float(result["price"]), result["source"])
 
     print("✅ Prices updated in PostgreSQL.")
-@app.get("/")
+
+@app.get("/", include_in_schema=False)
 async def read_root():
     return {"message": "Hey, Crypto!"}
 
