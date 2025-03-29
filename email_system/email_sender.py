@@ -1,90 +1,52 @@
-import os
-import psycopg2
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 import smtplib
-import matplotlib.pyplot as plt
-import io
-import base64
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.image import MIMEImage
-import random
-
-# connect to db
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://crypto_db_b52e_user:mTcqgolkW8xSYVgngMhpp4eHKZeOJx8v@dpg-cvfqephopnds73bcc2a0-a/crypto_db_b52e")
+import os
 
 
-def fetch_crypto_data():
-    conn = psycopg2.connect(DATABASE_URL)
-    cur = conn.cursor()
-    query = """
-        SELECT symbol, source, timestamp, price
-        FROM prices
-        WHERE timestamp >= NOW() - INTERVAL '24 HOURS'
-        ORDER BY symbol, source, timestamp;
+app = FastAPI()
+
+# ایمیل و پسورد سرور SMTP
+SMTP_SERVER = "smtp.gmail.com"
+SMTP_PORT = 587
+SMTP_USERNAME = os.getenv("SMTP_USERNAME")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
+
+# مدل درخواست
+class EmailRequest(BaseModel):
+    email: str
+    symbol: str
+
+@app.post("/send-email")
+async def send_email(request: EmailRequest):
+    email = request.email
+    symbol = request.symbol
+
+    # ایجاد لینک نمودار برای ایمیل
+    chart_url = f"https://crypto-backend-3gse.onrender.com/chart-image/{symbol}"
+
+    # متن ایمیل
+    email_body = f"""
+    <h2>گزارش تغییرات قیمت {symbol}</h2>
+    <p>این گزارش به‌صورت خودکار برای شما ارسال شده است.</p>
+    <img src="{chart_url}" alt="Crypto Chart" width="500"/>
+    <p>با احترام، تیم کریپتو داشبورد</p>
     """
-    cur.execute(query)
-    data = cur.fetchall()
-    conn.close()
-    return data
-
-
-def generate_chart(data):
-    crypto_dict = {}
-    
-    for symbol, source, timestamp, price in data:
-        if symbol not in crypto_dict:
-            crypto_dict[symbol] = {}
-        if source not in crypto_dict[symbol]:
-            crypto_dict[symbol][source] = {'timestamps': [], 'prices': []}
-        
-        crypto_dict[symbol][source]['timestamps'].append(timestamp)
-        crypto_dict[symbol][source]['prices'].append(price)
-
-    images = {}
-    for symbol, sources in crypto_dict.items():
-        plt.figure(figsize=(8, 5))
-        for source, values in sources.items():
-            color = (random.random(), random.random(), random.random())  
-            plt.plot(values['timestamps'], values['prices'], label=source, color=color)
-        
-        plt.xlabel('Time')
-        plt.ylabel('Price')
-        plt.title(f'Price Trend of {symbol}')
-        plt.legend()
-        plt.xticks(rotation=45)
-        
-        buf = io.BytesIO()
-        plt.savefig(buf, format='png')
-        plt.close()
-        buf.seek(0)
-        images[symbol] = base64.b64encode(buf.getvalue()).decode('utf-8')
-
-    return images
-
-
-def send_email(images):
-    sender_email = os.getenv("EMAIL_USER")
-    receiver_email = os.getenv("EMAIL_RECIEVER")
-    password = os.getenv("EMAIL_PASS")
 
     msg = MIMEMultipart()
-    msg["From"] = sender_email
-    msg["To"] = receiver_email
-    msg["Subject"] = "Daily Crypto Price Charts"
+    msg["From"] = SMTP_USERNAME
+    msg["To"] = email
+    msg["Subject"] = f"📊 Changing Price {symbol}"
+    msg.attach(MIMEText(email_body, "html"))
 
-    body = "Here are the latest 24-hour price trends for cryptocurrencies.\n\n"
-    msg.attach(MIMEText(body, "plain"))
-
-    for symbol, img_data in images.items():
-        img_bytes = base64.b64decode(img_data)
-        img_part = MIMEImage(img_bytes, name=f"{symbol}.png")
-        msg.attach(img_part)
-
-    with smtplib.SMTP_SSL("smtp.example.com", 465) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, msg.as_string())
-
-
-crypto_data = fetch_crypto_data()
-charts = generate_chart(crypto_data)
-send_email(charts)
+    try:
+        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+        server.starttls()
+        server.login(SMTP_USERNAME, SMTP_PASSWORD)
+        server.sendmail(SMTP_USERNAME, email, msg.as_string())
+        server.quit()
+        return {"status": "success", "message": "email has been sent!"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
