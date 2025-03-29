@@ -102,7 +102,8 @@ async def get_price_kucoin(coin_id):
     return await fetch_price_from_api(url, "KuCoin", coin_id, expected_structure="dict", price_path=["data", "price"])
 
 async def fetch_prices():
-    """Fetch prices from multiple APIs and save them in the database."""
+   print("🔄 Fetching latest cryptocurrency prices...", flush=True)
+    
     tasks = []
     for paprika_id, gecko_id in COINS:
         tasks.append(get_price_coinpaprika(paprika_id))
