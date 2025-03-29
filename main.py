@@ -24,14 +24,6 @@ COINS = [
     ("eth-ethereum", "ethereum"),
     ("doge-dogecoin", "dogecoin")
 ]
-SYMBOL_MAP = {
-    "btc": "BTC",
-    "bitcoin": "BTC",
-    "eth": "ETH",
-    "ethereum": "ETH",
-    "doge": "DOGE",
-    "dogecoin": "DOGE"
-}
 
 
 import httpx
@@ -42,10 +34,13 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
 SYMBOL_MAP = {
     "btc": "BTC",
     "bitcoin": "BTC",
+    "BITCOIN": "BTC",
     "eth": "ETH",
     "ethereum": "ETH",
+    "ETHEREUM": "ETH",
     "doge": "DOGE",
-    "dogecoin": "DOGE"
+    "dogecoin": "DOGE",
+    "DOGECOIN": "DOGE"
 }
     
     # تبدیل سیمبول به فرمت استاندارد
