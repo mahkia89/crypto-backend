@@ -219,3 +219,15 @@ async def get_price_chart(coin_symbol: str):
 
     return Response(content=img_buf.getvalue(), media_type="image/png")
 
+class EmailRequest(BaseModel):
+    email: str
+    symbol: str
+
+@app.post("/send-email")
+async def email_sender_api(request: EmailRequest):
+    response = await email_sender(request) 
+    
+    if response["status"] == "success":
+        return response
+    else:
+        raise HTTPException(status_code=500, detail=response["message"])
