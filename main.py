@@ -35,12 +35,15 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
         "btc": "BTC",
         "bitcoin": "BTC",
         "BITCOIN": "BTC",
+        "btc-bitcoin": "BTC",
         "eth": "ETH",
         "ethereum": "ETH",
         "ETHEREUM": "ETH",
+        "eth-ethereum": "ETH",
         "doge": "DOGE",
         "dogecoin": "DOGE",
-        "DOGECOIN": "DOGE"
+        "DOGECOIN": "DOGE",
+        "doge-dogecoin": "DOGE",
     }
 
     
@@ -85,16 +88,24 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
 
 async def get_price_coinpaprika(coin_id):
     """Get price from CoinPaprika"""
-    if coin_id not in ["btc", "eth", "doge"]:
-        return None
-
+    standardized_coin = COIN_SYMBOLS.get(coin_id.lower())  # Convert to standard symbol
+    
+    if not standardized_coin:
+        return None  # Skip if the coin is not in our mapping
+    
     url = f"https://api.coinpaprika.com/v1/tickers/{coin_id}"
-    return await fetch_price_from_api(url, "CoinPaprika", coin_id, expected_structure="dict", price_path=["quotes", "USD", "price"])
+    return await fetch_price_from_api(url, "CoinPaprika", standardized_coin, expected_structure="dict", price_path=["quotes", "USD", "price"])
+
 
 async def get_price_coingecko(coin_id):
     """Get price from CoinGecko"""
+    standardized_coin = COIN_SYMBOLS.get(coin_id.lower())
+
+    if not standardized_coin:
+        return None
+        
     url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
-    return await fetch_price_from_api(url, "CoinGecko", coin_id, expected_structure="dict", price_path=[coin_id, "usd"])
+    return await fetch_price_from_api(url, "CoinGecko", standardized_coin, expected_structure="dict", price_path=[coin_id, "usd"])
 
 async def get_price_bitfinex(coin_id):
     """Get price from Bitfinex"""
