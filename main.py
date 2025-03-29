@@ -118,11 +118,11 @@ async def fetch_prices():
 
     print("✅ Prices updated in PostgreSQL.")
 
-@app.post("/")
+@app.get("/")
 async def read_root():
     return {"message": "Hey, Crypto!"}
 
-@app.post("/prices")
+@app.get("/prices")
 async def get_prices():
     """Fetch new prices from APIs manually"""
     await fetch_prices()
@@ -141,14 +141,14 @@ async def startup_event():
     asyncio.create_task(periodic_price_fetch())
 
 
-@app.post("/stored-prices")
+@app.get("/stored-prices")
 async def get_stored_prices_api():
     """ API to get latest stored prices from the database """
     prices = await get_stored_prices()
     return {"status": "success", "data": prices}
 
 
-@app.post("/chart-data/{coin_symbol}")
+@app.get("/chart-data/{coin_symbol}")
 async def get_chart_data(coin_symbol: str):
     """Return chart data for a specific coin in JSON format."""
     prices = await get_chart_prices(coin_symbol)
@@ -167,7 +167,7 @@ from fastapi import FastAPI, Response
 
 app = FastAPI()
 
-@app.post("/chart-image/{coin_symbol}")
+@app.get("/chart-image/{coin_symbol}")
 async def get_price_chart(coin_symbol: str):
     """Generate and return a price chart with different sources as different lines."""
 
