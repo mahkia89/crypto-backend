@@ -61,10 +61,10 @@ async def get_chart_prices(coin_symbol):
     
     conn = await get_db_connection()
     rows = await conn.fetch("""
-        SELECT price, source, timestamp 
+        SELECT DISTINCT ON (source) price, source, timestamp 
         FROM prices 
         WHERE symbol = UPPER($1) 
-        ORDER BY timestamp DESC
+        ORDER BY source, timestamp DESC
         LIMIT 100
     """, coin_symbol.upper())
 
@@ -80,8 +80,9 @@ async def get_chart_prices(coin_symbol):
             "timestamp": row["timestamp"],
             "price": row["price"]
         })
+    
     print(f"🔍 Fetching chart prices for: {coin_symbol}")
-
     print(f"🔍 get_chart_prices({coin_symbol}) fetched data: {structured_data}")
 
     return structured_data
+
