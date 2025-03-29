@@ -219,10 +219,3 @@ async def get_price_chart(coin_symbol: str):
 
     return Response(content=img_buf.getvalue(), media_type="image/png")
 
-
-from email_system.email_sender import generate_and_send_email
-
-@app.get("/send-email")
-async def send_price_chart_email():
-    """ API to send price chart via email """
-    return generate_and_send_email()
