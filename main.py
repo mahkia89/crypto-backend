@@ -24,11 +24,33 @@ COINS = [
     ("eth-ethereum", "ethereum"),
     ("doge-dogecoin", "dogecoin")
 ]
+SYMBOL_MAP = {
+    "btc": "BTC",
+    "bitcoin": "BTC",
+    "eth": "ETH",
+    "ethereum": "ETH",
+    "doge": "DOGE",
+    "dogecoin": "DOGE"
+}
+
 
 import httpx
 
 async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", price_path=None):
     """Generic function to fetch cryptocurrency prices from an API."""
+    # نقشه تبدیل سیمبول‌ها
+SYMBOL_MAP = {
+    "btc": "BTC",
+    "bitcoin": "BTC",
+    "eth": "ETH",
+    "ethereum": "ETH",
+    "doge": "DOGE",
+    "dogecoin": "DOGE"
+}
+    
+    # تبدیل سیمبول به فرمت استاندارد
+    standardized_coin_id = symbol_map.get(coin_id.upper(), coin_id.upper())
+
     async with httpx.AsyncClient(timeout=15.0) as client:
         try:
             response = await client.get(url)
@@ -50,11 +72,10 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
                             print(f"⚠️ Unexpected price format from {source} for {coin_id}: {price}")
                             return None
 
-                        return {"source": source, "coin": coin_id, "price": price}
-
+                        return {"source": source, "coin": standardized_coin_id, "price": price}
 
                     elif expected_structure == "list" and isinstance(data, list) and len(data) > 6:
-                        return {"source": source, "coin": coin_id, "price": data[6]}
+                        return {"source": source, "coin": standardized_coin_id, "price": data[6]}
 
                     print(f"⚠️ Invalid or missing data in response from {source} for {coin_id}")
                 except ValueError:
@@ -64,7 +85,8 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
         except httpx.ReadTimeout:
             print(f"⚠️ Timeout error: {source} for {coin_id}")
     
-    return {"source": source, "coin": coin_id, "price": None}
+    return {"source": source, "coin": standardized_coin_id, "price": None}
+
 
 async def get_price_coinpaprika(coin_id):
     """Get price from CoinPaprika"""
