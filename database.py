@@ -3,7 +3,7 @@ import asyncpg
 import asyncio
 
 # Database URL from environment variables
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://crypto_db_b52e_user:mTcqgolkW8xSYVgngMhpp4eHKZeOJx8v@dpg-cvfqephopnds73bcc2a0-a/crypto_db_b52e")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 async def get_db_connection():
     """Establish a connection with the PostgreSQL database."""
