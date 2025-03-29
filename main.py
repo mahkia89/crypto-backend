@@ -7,6 +7,7 @@ from database import save_price, create_database, get_chart_prices, get_stored_p
 import matplotlib.pyplot as plt
 import io
 from fastapi.responses import Response
+from pydantic import BaseModel
 
 app = FastAPI()
 
