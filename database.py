@@ -65,7 +65,8 @@ async def get_chart_prices(coin_symbol):
         FROM prices 
         WHERE symbol = UPPER($1) 
         ORDER BY timestamp DESC
-    """, coin_symbol.upper())  # Ensure symbol is in uppercase
+        LIMIT 100
+    """, coin_symbol.upper())
 
     await conn.close()
 
