@@ -38,13 +38,14 @@ async def get_stored_prices():
     rows = await conn.fetch("""
        SELECT DISTINCT ON (symbol, source) symbol, price, source, timestamp
         FROM prices
+        WHERE symbol IN ('BTC', 'ETH', 'DOGE')
         ORDER BY symbol, source, timestamp DESC
     """)
     await conn.close()
 
     structured_data1 = {}
     for row in rows:
-        coin_symbol = row["symbol"].split('-')[-1].upper()
+        coin_symbol = row["symbol"].upper()
         if coin_symbol not in structured_data1:
             structured_data1[coin_symbol] = []
         structured_data1[coin_symbol].append({
@@ -64,6 +65,7 @@ async def get_chart_prices(coin_symbol):
         SELECT DISTINCT ON (source) price, source, timestamp 
         FROM prices 
         WHERE symbol = UPPER($1) 
+        AND symbol IN ('BTC', 'ETH', 'DOGE')
         ORDER BY source, timestamp DESC
         LIMIT 100
     """, coin_symbol.upper())
@@ -85,4 +87,5 @@ async def get_chart_prices(coin_symbol):
     print(f"🔍 get_chart_prices({coin_symbol}) fetched data: {structured_data}")
 
     return structured_data
+
 
