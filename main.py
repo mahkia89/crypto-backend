@@ -176,8 +176,6 @@ async def get_price_chart(coin_symbol: str):
     if not prices:
         return Response(content="No data available", media_type="text/plain", status_code=404)
 
-    print("Prices data:", prices)
-
     # Define color mapping for different sources
     source_colors = {
         "CoinPaprika": "blue",
