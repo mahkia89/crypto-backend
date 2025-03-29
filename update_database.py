@@ -1,5 +1,5 @@
 import asyncio
-from main import fetch_prices  # استفاده از همان فانکشنی که قیمت‌ها را آپدیت می‌کند
+from main import fetch_prices 
 
 async def main():
     print("🔄 Fetching latest cryptocurrency prices...")
