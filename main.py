@@ -166,7 +166,6 @@ import matplotlib.pyplot as plt
 import io
 from fastapi import FastAPI, Response
 
-app = FastAPI()
 
 @app.get("/chart-image/{coin_symbol}")
 async def get_price_chart(coin_symbol: str):
