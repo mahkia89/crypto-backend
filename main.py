@@ -20,9 +20,9 @@ app.add_middleware(
 )
 
 COINS = [
-    ("btc-bitcoin", "bitcoin"),
-    ("eth-ethereum", "ethereum"),
-    ("doge-dogecoin", "dogecoin")
+    ("btc-bitcoin", "BTC"),
+    ("eth-ethereum", "ETH"),
+    ("doge-dogecoin", "DOGE")
 ]
 
 
@@ -42,6 +42,7 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
         "dogecoin": "DOGE",
         "DOGECOIN": "DOGE"
     }
+
     
     # تبدیل سیمبول به فرمت استاندارد
     standardized_coin_id = SYMBOL_MAP.get(coin_id.upper(), coin_id.upper())
@@ -84,6 +85,9 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
 
 async def get_price_coinpaprika(coin_id):
     """Get price from CoinPaprika"""
+    if coin_id not in ["btc", "eth", "doge"]:
+        return None
+
     url = f"https://api.coinpaprika.com/v1/tickers/{coin_id}"
     return await fetch_price_from_api(url, "CoinPaprika", coin_id, expected_structure="dict", price_path=["quotes", "USD", "price"])
 
