@@ -157,12 +157,20 @@ async def get_chart_data(coin_symbol: str):
     if not prices:
         return {"status": "error", "message": "No data available."}
 
-    print("Prices:", prices)
+    # Check the format of 'prices' and extract the correct data
+    # Assuming 'prices' is a dictionary where each key contains a list of prices for a specific source
+    data = []
+    for source, price_data in prices.items():
+        for p in price_data:
+            # Extract timestamp and price
+            if isinstance(p, dict) and 'timestamp' in p and 'price' in p:
+                data.append({"timestamp": p['timestamp'], "price": p['price']})
 
-    return {
-        "status": "success",
-        "data": [{"timestamp": p.timestamp, "price": p.price} for p in prices],
-    }
+    if not data:
+        return {"status": "error", "message": "No valid price data found."}
+
+    return {"status": "success", "data": data}
+
 
 import matplotlib.pyplot as plt
 import io
