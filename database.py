@@ -79,6 +79,6 @@ async def get_chart_prices(coin_symbol):
             "timestamp": row["timestamp"],
             "price": row["price"]
         })
-    print(f"🔍 get_chart_prices({coin_symbol}) fetched data: {prices}")
+    print(f"🔍 get_chart_prices({coin_symbol}) fetched data: {structured_data}")
 
     return structured_data
