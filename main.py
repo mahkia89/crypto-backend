@@ -159,6 +159,10 @@ async def get_chart_data(coin_symbol: str):
 
     return {
         "status": "success",
+        print("Prices:", prices)
+        if prices is None:
+            return {"error": "No data available"}, 500
+
         "data": [{"timestamp": p.timestamp, "price": p.price} for p in prices],
     }
 
