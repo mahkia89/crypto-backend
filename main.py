@@ -30,7 +30,7 @@ import httpx
 
 async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", price_path=None):
     """Generic function to fetch cryptocurrency prices from an API."""
-
+    # نقشه تبدیل سیمبول‌ها
     SYMBOL_MAP = {
         "btc": "BTC",
         "bitcoin": "BTC",
@@ -42,10 +42,9 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
         "dogecoin": "DOGE",
         "DOGECOIN": "DOGE"
     }
-
     
     # تبدیل سیمبول به فرمت استاندارد
-    standardized_coin_id = symbol_map.get(coin_id.upper(), coin_id.upper())
+    standardized_coin_id = SYMBOL_MAP.get(coin_id.upper(), coin_id.upper())
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         try:
@@ -82,7 +81,6 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
             print(f"⚠️ Timeout error: {source} for {coin_id}")
     
     return {"source": source, "coin": standardized_coin_id, "price": None}
-
 
 async def get_price_coinpaprika(coin_id):
     """Get price from CoinPaprika"""
