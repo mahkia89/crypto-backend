@@ -30,18 +30,19 @@ import httpx
 
 async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", price_path=None):
     """Generic function to fetch cryptocurrency prices from an API."""
-    # نقشه تبدیل سیمبول‌ها
-SYMBOL_MAP = {
-    "btc": "BTC",
-    "bitcoin": "BTC",
-    "BITCOIN": "BTC",
-    "eth": "ETH",
-    "ethereum": "ETH",
-    "ETHEREUM": "ETH",
-    "doge": "DOGE",
-    "dogecoin": "DOGE",
-    "DOGECOIN": "DOGE"
-}
+
+    SYMBOL_MAP = {
+        "btc": "BTC",
+        "bitcoin": "BTC",
+        "BITCOIN": "BTC",
+        "eth": "ETH",
+        "ethereum": "ETH",
+        "ETHEREUM": "ETH",
+        "doge": "DOGE",
+        "dogecoin": "DOGE",
+        "DOGECOIN": "DOGE"
+    }
+
     
     # تبدیل سیمبول به فرمت استاندارد
     standardized_coin_id = symbol_map.get(coin_id.upper(), coin_id.upper())
