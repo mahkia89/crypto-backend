@@ -80,6 +80,9 @@ async def get_chart_prices(coin_symbol):
             "timestamp": row["timestamp"],
             "price": row["price"]
         })
+    async def get_chart_prices(coin_symbol: str):
+    print(f"🔍 Fetching chart prices for: {coin_symbol}")
+
     print(f"🔍 get_chart_prices({coin_symbol}) fetched data: {structured_data}")
 
     return structured_data
