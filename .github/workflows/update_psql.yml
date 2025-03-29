@@ -2,21 +2,27 @@ name: Update Render Database
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # Runs every 10 minutes
-  workflow_dispatch:  # Allows manual triggering
+    - cron: '*/10 * * * *'  # هر ۱۰ دقیقه اجرا می‌شود
+  workflow_dispatch:  # قابلیت اجرای دستی
 
 jobs:
   update-database:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up PostgreSQL Client
-        run: sudo apt-get install -y postgresql-client
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: '3.10'
 
-      - name: Update Database on Render
-        env:
-          DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}
+      - name: Install Dependencies
         run: |
-          psql $DATABASE_URL -f update_script.sql
+          pip install -r requirements.txt  # نصب تمام وابستگی‌ها
+
+      - name: Run Update Script
+        env:
+          DATABASE_URL: ${{ secrets.RENDER_DATABASE_URL }}  # متغیر محیطی برای دیتابیس
+        run: python update_database.py
