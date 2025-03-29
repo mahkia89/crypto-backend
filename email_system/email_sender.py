@@ -4,9 +4,23 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import os
-
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+
+# لیست دامنه‌های مجاز (یا همه دامنه‌ها)
+origins = [
+    "http://localhost:3000",  # اگر فرانت روی لوکال اجرا می‌شه
+    "https://crypto-frontend-lbkz.onrender.com/",  # آدرس دیپلوی‌شده فرانت در Render
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],  # همه متدهای HTTP
+    allow_headers=["*"],  # همه هدرها
+)
 
 # ایمیل و پسورد سرور SMTP
 SMTP_SERVER = "smtp.gmail.com"
