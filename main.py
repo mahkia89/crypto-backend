@@ -48,7 +48,7 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
 
     
     # تبدیل سیمبول به فرمت استاندارد
-    standardized_coin_id = SYMBOL_MAP.get(coin_id.upper(), coin_id.upper())
+    standardized_coin_id = COIN_SYMBOLS.get(coin_id.upper(), coin_id.upper())
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         try:
