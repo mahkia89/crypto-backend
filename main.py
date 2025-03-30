@@ -95,11 +95,11 @@ async def get_price_coinpaprika(coin_id):
 async def get_price_coingecko(coin_id):
     """Get price from CoinGecko"""
     symbol_map = {
-    "btc": "bitcoin",
+    "BTC": "bitcoin",
     "bitcoin": "bitcoin",
-    "eth": "ethereum",
+    "ETH": "ethereum",
     "ethereum": "ethereum",
-    "doge": "dogecoin",
+    "DOGE": "dogecoin",
     "dogecoin": "dogecoin",
     }
 
