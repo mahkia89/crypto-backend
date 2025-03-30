@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import io
 from fastapi.responses import Response
 from pydantic import BaseModel
+from config import COINS
 
 app = FastAPI()
 
@@ -18,12 +19,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-COINS = [
-    ("btc-bitcoin", "BTC"),
-    ("eth-ethereum", "ETH"),
-    ("doge-dogecoin", "DOGE")
-]
 
 COIN_SYMBOLS = {
     "btc": "BTC",
