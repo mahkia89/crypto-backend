@@ -30,8 +30,8 @@ import httpx
 
 async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", price_path=None):
     """Generic function to fetch cryptocurrency prices from an API."""
-    # نقشه تبدیل سیمبول‌ها
-    SYMBOL_MAP = {
+    
+    COIN_SYMBOLS = {
         "btc": "BTC",
         "bitcoin": "BTC",
         "BITCOIN": "BTC",
