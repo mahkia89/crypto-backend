@@ -19,6 +19,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+COINS = [
+    ("btc-bitcoin", "BTC"),
+    ("eth-ethereum", "ETH"),
+    ("doge-dogecoin", "DOGE")
+]
+
 COIN_SYMBOLS = {
     "btc": "BTC",
     "bitcoin": "BTC",
