@@ -19,32 +19,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-COINS = [
-    ("btc-bitcoin", "BTC"),
-    ("eth-ethereum", "ETH"),
-    ("doge-dogecoin", "DOGE")
-]
-
+COIN_SYMBOLS = {
+    "btc": "BTC",
+    "bitcoin": "BTC",
+    "BITCOIN": "BTC",
+    "btc-bitcoin": "BTC",
+    "eth": "ETH",
+    "ethereum": "ETH",
+    "ETHEREUM": "ETH",
+    "eth-ethereum": "ETH",
+    "doge": "DOGE",
+    "dogecoin": "DOGE",
+    "DOGECOIN": "DOGE",
+    "doge-dogecoin": "DOGE",
+}
 
 import httpx
 
 async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", price_path=None):
     """Generic function to fetch cryptocurrency prices from an API."""
     
-    COIN_SYMBOLS = {
-        "btc": "BTC",
-        "bitcoin": "BTC",
-        "BITCOIN": "BTC",
-        "btc-bitcoin": "BTC",
-        "eth": "ETH",
-        "ethereum": "ETH",
-        "ETHEREUM": "ETH",
-        "eth-ethereum": "ETH",
-        "doge": "DOGE",
-        "dogecoin": "DOGE",
-        "DOGECOIN": "DOGE",
-        "doge-dogecoin": "DOGE",
-    }
+
 
     
     # تبدیل سیمبول به فرمت استاندارد
