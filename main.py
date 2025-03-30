@@ -105,9 +105,13 @@ async def get_price_coingecko(coin_id):
 
 async def get_price_bitfinex(coin_id):
     """Get price from Bitfinex"""
+    print(f"Checking bitfinex price for: {coin_id}") 
+    
     symbol_map = {
         "bitcoin": "tBTCUSD",
         "ethereum": "tETHUSD",
+        "ETH": "tETHUSD",
+        "BTC": "tBTCUSD"
     }
     if coin_id not in symbol_map:
         return None
@@ -117,11 +121,17 @@ async def get_price_bitfinex(coin_id):
 
 async def get_price_kucoin(coin_id):
     """Get price from KuCoin"""
+    print(f"Checking KuCoin price for: {coin_id}") 
+    
     symbol_map = {
         "bitcoin": "BTC-USDT",
         "ethereum": "ETH-USDT",
-        "dogecoin": "DOGE-USDT"
+        "dogecoin": "DOGE-USDT",
+        "BTC": "BTC-USDT",
+        "ETH": "ETH-USDT",
+        "DOGE": "DOGE-USDT"
     }
+
     if coin_id not in symbol_map:
         return None
 
