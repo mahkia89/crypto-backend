@@ -40,10 +40,6 @@ import httpx
 async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", price_path=None):
     """Generic function to fetch cryptocurrency prices from an API."""
     
-
-
-    
-    # تبدیل سیمبول به فرمت استاندارد
     standardized_coin_id = COIN_SYMBOLS.get(coin_id.upper(), coin_id.upper())
 
     async with httpx.AsyncClient(timeout=15.0) as client:
@@ -60,7 +56,10 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
                         # Navigate through the nested dictionary using price_path
                         price = data
                         for key in price_path:
-                            price = price.get(key, {})
+                            if key not in price:
+                                print(f"⚠️ Missing key '{key}' in path at {source} for {coin_id}")
+                                return None
+                            price = price[key]
                         if isinstance(price, str) and price.replace('.', '', 1).isdigit():
                             price = float(price)  # تبدیل رشته به عدد اعشاری
                         elif not isinstance(price, (int, float)):
@@ -81,6 +80,7 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
             print(f"⚠️ Timeout error: {source} for {coin_id}")
     
     return {"source": source, "coin": standardized_coin_id, "price": None}
+
 
 async def get_price_coinpaprika(coin_id):
     """Get price from CoinPaprika"""
