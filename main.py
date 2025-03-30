@@ -107,7 +107,7 @@ async def get_price_coingecko(coin_id):
         return None
         
     url = f"https://api.coingecko.com/api/v3/simple/price?ids={symbol_map[coin_id]}&vs_currencies=usd"
-    return await fetch_price_from_api(url, "CoinGecko", coin_id, expected_structure="dict", price_path=[coin_id, "usd"])
+    return await fetch_price_from_api(url, "CoinGecko", coin_id, expected_structure="dict", price_path=[symbol_map[coin_id], "usd"])
 
 async def get_price_bitfinex(coin_id):
     """Get price from Bitfinex"""
