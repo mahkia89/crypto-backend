@@ -84,6 +84,7 @@ async def fetch_price_from_api(url, source, coin_id, expected_structure="dict", 
 
 async def get_price_coinpaprika(coin_id):
     """Get price from CoinPaprika"""
+    print(f"Checking bitfinex price for: {coin_id}")
     standardized_coin = COIN_SYMBOLS.get(coin_id.lower())  # Convert to standard symbol
     
     if not standardized_coin:
