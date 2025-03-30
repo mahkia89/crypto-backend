@@ -96,13 +96,19 @@ async def get_price_coinpaprika(coin_id):
 
 async def get_price_coingecko(coin_id):
     """Get price from CoinGecko"""
-    print(f"Checking bitfinex price for: {coin_id}")
-    standardized_coin = COIN_SYMBOLS.get(coin_id.lower())
+    symbol_map = {
+    "btc": "bitcoin",
+    "bitcoin": "bitcoin",
+    "eth": "ethereum",
+    "ethereum": "ethereum",
+    "doge": "dogecoin",
+    "dogecoin": "dogecoin",
+    }
 
-    if not standardized_coin:
+    if coin_id not in symbol_map:
         return None
         
-    url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id.lower()}&vs_currencies=usd"
+    url = f"https://api.coingecko.com/api/v3/simple/price?ids={symbol_map[coin_id]}&vs_currencies=usd"
     return await fetch_price_from_api(url, "CoinGecko", standardized_coin, expected_structure="dict", price_path=[coin_id, "usd"])
 
 async def get_price_bitfinex(coin_id):
