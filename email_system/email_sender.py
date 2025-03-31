@@ -65,3 +65,42 @@ async def send_email(request: EmailRequest):
         return {"status": "success", "message": "email has been sent!"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+async def check_price_drops():
+    """Check price drops and send alerts to users."""
+    global user_settings
+
+    for email, settings in user_settings.items():
+        threshold = settings["price_drop_threshold"]
+        
+        for coin, price_data in stored_prices.items():
+            if len(price_data) < 2:
+                continue  # Not enough data to compare
+            
+            latest_price = price_data[-1]["price"]
+            one_hour_ago_price = price_data[0]["price"]
+
+            drop_percentage = ((one_hour_ago_price - latest_price) / one_hour_ago_price) * 100
+            
+            if drop_percentage >= threshold:
+                await send_email_alert(email, coin, drop_percentage, latest_price)
+
+async def send_email_alert(email, coin, drop_percentage, latest_price):
+    """Send email alert to user"""
+    subject = f"⚠️ {coin} dropped {drop_percentage:.2f}%!"
+    body = f"The price of {coin} has dropped {drop_percentage:.2f}% in the last hour. Current price: ${latest_price:.2f}."
+
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = "your-email@example.com"
+    msg["To"] = email
+
+    # Send email using SMTP
+    with smtplib.SMTP("smtp.example.com", 587) as server:
+        server.starttls()
+        server.login("your-email@example.com", "your-password")
+        server.sendmail("your-email@example.com", email, msg.as_string())
+
+    print(f"Email alert sent to {email}")
+
