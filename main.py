@@ -9,6 +9,7 @@ import io
 from fastapi.responses import Response
 from pydantic import BaseModel
 from config import COINS
+from email_sender import send_email
 
 app = FastAPI()
 
@@ -277,7 +278,7 @@ class EmailRequest(BaseModel):
 
 @app.post("/send-email")
 async def email_sender_api(request: EmailRequest):
-    response = await email_sender(request) 
+    response = await send_email(request) 
     
     if response["status"] == "success":
         return response
