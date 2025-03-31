@@ -306,3 +306,10 @@ async def get_settings(email: str):
     if email not in user_settings:
         raise HTTPException(status_code=404, detail="Settings not found")
     return {"status": "success", "data": user_settings[email]}
+
+@app.get("/check-price-drops")
+async def check_price_drops_endpoint():
+    """Manually trigger price drop checking via GitHub Actions."""
+    await check_price_drops()
+    return {"status": "success", "message": "Price check triggered"}
+
