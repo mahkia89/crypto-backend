@@ -9,7 +9,7 @@ import io
 from fastapi.responses import Response
 from pydantic import BaseModel
 from config import COINS
-from email_sender import send_email
+from email_system.email_sender import send_email
 
 app = FastAPI()
 
