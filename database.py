@@ -28,47 +28,43 @@ async def save_price(symbol, price, source):
     """Save cryptocurrency price to PostgreSQL."""
     conn = await get_db_connection()
     await conn.execute("""
-        INSERT INTO prices (symbol, price, source)
-        VALUES ($1, $2, $3)
+        INSERT INTO prices (symbol, price, source, timestamp)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
     """, symbol, price, source)
     await conn.close()
 
 async def get_stored_prices():
-    """Fetch the latest stored price for each cryptocurrency from each source."""
+    """Fetch all stored price history for each cryptocurrency from each source."""
     conn = await get_db_connection()
     rows = await conn.fetch("""
-       SELECT DISTINCT ON (symbol, source) symbol, price, source, timestamp
+        SELECT symbol, price, source, timestamp
         FROM prices
         WHERE symbol IN ('BTC', 'ETH', 'DOGE')
-        ORDER BY symbol, source, timestamp DESC
+        ORDER BY timestamp DESC
     """)
     await conn.close()
 
-    structured_data1 = {}
+    structured_data = {}
     for row in rows:
         coin_symbol = row["symbol"].upper()
-        if coin_symbol not in structured_data1:
-            structured_data1[coin_symbol] = []
-        structured_data1[coin_symbol].append({
+        if coin_symbol not in structured_data:
+            structured_data[coin_symbol] = []
+        structured_data[coin_symbol].append({
             "price": row["price"],
             "source": row["source"],
             "timestamp": row["timestamp"]
         })
 
-    return structured_data1
-
+    return structured_data
 
 async def get_chart_prices(coin_symbol):
-    """Fetch historical prices for a specific cryptocurrency, grouped by source."""
-    
+    """Fetch all historical prices for a specific cryptocurrency, grouped by source."""
     conn = await get_db_connection()
     rows = await conn.fetch("""
-        SELECT DISTINCT ON (source) price, source, timestamp 
+        SELECT price, source, timestamp 
         FROM prices 
-        WHERE symbol = UPPER($1) 
-        AND symbol IN ('BTC', 'ETH', 'DOGE')
-        ORDER BY source, timestamp DESC
-        LIMIT 100
+        WHERE symbol = UPPER($1)
+        ORDER BY timestamp ASC
     """, coin_symbol.upper())
 
     await conn.close()
@@ -88,5 +84,3 @@ async def get_chart_prices(coin_symbol):
     print(f"🔍 get_chart_prices({coin_symbol}) fetched data: {structured_data}")
 
     return structured_data
-
-
