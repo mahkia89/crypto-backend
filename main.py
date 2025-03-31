@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import asyncio
 import httpx
 from datetime import datetime
@@ -284,3 +284,25 @@ async def email_sender_api(request: EmailRequest):
         return response
     else:
         raise HTTPException(status_code=500, detail=response["message"])
+
+
+# In-memory storage for settings (replace with database in production)
+user_settings = {}
+
+class Settings(BaseModel):
+    email: str
+    price_drop_threshold: float  # Percentage drop for alert
+    dark_mode: bool
+
+@app.post("/save-settings")
+async def save_settings(settings: Settings):
+    """Save user settings including email alerts and dark mode preference."""
+    user_settings[settings.email] = settings.dict()
+    return {"status": "success", "message": "Settings saved!"}
+
+@app.get("/get-settings/{email}")
+async def get_settings(email: str):
+    """Retrieve user settings"""
+    if email not in user_settings:
+        raise HTTPException(status_code=404, detail="Settings not found")
+    return {"status": "success", "data": user_settings[email]}
