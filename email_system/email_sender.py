@@ -8,40 +8,41 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# لیست دامنه‌های مجاز (یا همه دامنه‌ها)
+
 origins = [
-    "http://localhost:3000",  # اگر فرانت روی لوکال اجرا می‌شه
-    "https://crypto-frontend-lbkz.onrender.com/",  # آدرس دیپلوی‌شده فرانت در Render
+    "http://localhost:3000",  # If front is running on local
+    "https://crypto-frontend-lbkz.onrender.com/",  # If front is running on render
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # همه متدهای HTTP
-    allow_headers=["*"],  # همه هدرها
+    allow_methods=["*"],  # All methods of HTTP
+    allow_headers=["*"],  # All headers
 )
 
-# ایمیل و پسورد سرور SMTP
+# Email and password set in secrets
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 SMTP_USERNAME = os.getenv("SMTP_USERNAME")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 
-# مدل درخواست
+
 class EmailRequest(BaseModel):
     email: str
     symbol: str
 
 @app.post("/send-email")
 async def send_email(request: EmailRequest):
+    print("📩 Received email request:", request.dict())  # Log for requesting email
     email = request.email
     symbol = request.symbol
 
-    # ایجاد لینک نمودار برای ایمیل
+    # Plot for email
     chart_url = f"https://crypto-backend-3gse.onrender.com/chart-image/{symbol}"
 
-    # متن ایمیل
+    # email body
     email_body = f"""
     <h2>گزارش تغییرات قیمت {symbol}</h2>
     <p>این گزارش به‌صورت خودکار برای شما ارسال شده است.</p>
