@@ -4,12 +4,12 @@ BACKEND_URL = "https://crypto-backend-3gse.onrender.com"
 
 def trigger_price_check():
     """Call the backend to check price drops and send alerts."""
-    response = requests.get(f"{BACKEND_URL}/check-price-drops")
-    
-    if response.status_code == 200:
+    try:
+        response = requests.get(f"{BACKEND_URL}/check-price-drops", timeout=10)
+        response.raise_for_status()
         print("✅ Price check completed:", response.json())
-    else:
-        print("❌ Error checking prices:", response.text)
+    except requests.exceptions.RequestException as e:
+        print("❌ Error checking prices:", str(e))
 
 if __name__ == "__main__":
     trigger_price_check()
