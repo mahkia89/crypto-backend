@@ -2,6 +2,9 @@ import os
 import asyncpg
 import asyncio
 from config import COINS
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
+from models import Price  
 
 # Database URL from environment variables
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://crypto_db_b52e_user:mTcqgolkW8xSYVgngMhpp4eHKZeOJx8v@dpg-cvfqephopnds73bcc2a0-a/crypto_db_b52e")
@@ -32,6 +35,28 @@ async def save_price(symbol, price, source):
         VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
     """, symbol, price, source)
     await conn.close()
+
+
+async def get_last_price(coin_symbol: str, session: AsyncSession):
+    """Retrieve the last known price of a given coin."""
+    result = await session.execute(
+        select(Price).where(Price.coin_symbol == coin_symbol).order_by(Price.timestamp.desc()).limit(1)
+    )
+    price_entry = result.scalars().first()
+    return price_entry.price if price_entry else None
+
+async def get_last_price_dict():
+    """Retrieve the most recent price for all tracked cryptocurrencies."""
+    conn = await get_db_connection()
+    rows = await conn.fetch("""
+        SELECT DISTINCT ON (symbol) symbol, price
+        FROM prices
+        WHERE symbol IN ('BTC', 'ETH', 'DOGE')
+        ORDER BY symbol, timestamp DESC
+    """)
+    await conn.close()
+
+    return {row["symbol"].upper(): row["price"] for row in rows}
 
 async def get_stored_prices():
     """Fetch all stored price history for each cryptocurrency from each source."""
