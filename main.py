@@ -308,8 +308,13 @@ async def get_settings(email: str):
     return {"status": "success", "data": user_settings[email]}
 
 @app.get("/check-price-drops")
-async def check_price_drops_endpoint():
-    """Manually trigger price drop checking via GitHub Actions."""
-    await check_price_drops()
-    return {"status": "success", "message": "Price check triggered"}
-
+async def check_price_drops():
+    """Check price drops and send alerts if necessary."""
+    for email, settings in user_settings.items():
+        for coin in COIN_SYMBOLS.values():
+            last_price = await get_last_price(coin)
+            if last_price:
+                previous_price = last_price * (1 + settings["price_drop_threshold"] / 100)
+                if last_price < previous_price:
+                    await send_email({"email": email, "symbol": coin})
+    return {"status": "success", "message": "Price check completed"}
