@@ -36,7 +36,7 @@ backend/
 
 ### 1️⃣ Clone the Repository
 ```bash
-git clone https://github.com/yourusername/crypto-price-tracker.git
+git clone https://github.com/mahkia89/crypto-backend.git
 cd crypto-price-tracker/backend
 ```
 
