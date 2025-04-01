@@ -8,7 +8,7 @@ This is the backend service for **Crypto Price Tracker**, a cryptocurrency monit
 - Stores price data in a PostgreSQL database.
 - Generates historical price charts.
 - Sends email alerts when price thresholds are met.
-- Supports user settings like price alerts and dark mode.
+- Supports user settings like price alerts.
 - Periodically updates prices every 5 minutes.
 
 ## 🏗 Tech Stack
